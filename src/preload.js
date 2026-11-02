@@ -18,6 +18,7 @@ const INVOKE = new Set([
   'settings:set',
   'settings:chooseSaveDir',
   'settings:importOAuth',
+  'settings:setOAuthClient',
   'drive:status',
   'drive:signIn',
   'drive:cancelSignIn',

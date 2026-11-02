@@ -288,10 +288,20 @@ function renderDrive() {
 
   // Settings dialog
   $('oauthStep').classList.toggle('done', d.configured);
+  if (d.configured && !guideForcedOpen) $('oauthGuide').hidden = true;
+  if (!d.configured) $('oauthGuide').hidden = false;
+  $('oauthEdit').hidden = !d.configured || !$('oauthGuide').hidden;
+  $('oauthSummary').textContent = d.configured
+    ? `Key saved (${d.clientHint || 'Desktop client'}).`
+    : "One-time setup in Google Cloud, about 5 minutes. Sign in there with the same Gmail you'll upload to.";
   $('signIn').disabled = !d.configured;
   $('signIn').hidden = d.signedIn;
   $('signOut').hidden = !d.signedIn;
-  $('accountText').textContent = d.signedIn ? `Signed in as ${d.email || 'your Google account'}` : 'Not signed in';
+  $('accountText').textContent = d.signedIn
+    ? `Signed in as ${d.email || 'your Google account'}`
+    : d.configured
+      ? 'Not signed in yet'
+      : 'Finish step 1 first, then sign in here.';
   $('signIn').closest('.step').classList.toggle('done', d.signedIn);
   $('saveFolder').disabled = !d.signedIn;
   $('folderInput').disabled = !d.signedIn;
@@ -306,26 +316,83 @@ async function refreshDrive() {
 }
 
 $('driveChip').onclick = openSettings;
+
+// Exact Google Cloud pages for each setup step.
+const CLOUD_PAGES = {
+  enableApi: 'https://console.cloud.google.com/flows/enableapi?apiid=drive.googleapis.com',
+  branding: 'https://console.cloud.google.com/auth/overview',
+  audience: 'https://console.cloud.google.com/auth/audience',
+  client: 'https://console.cloud.google.com/auth/clients/create',
+};
+for (const b of document.querySelectorAll('[data-cloud]')) {
+  b.onclick = () => api.invoke('shell:openExternal', CLOUD_PAGES[b.dataset.cloud]);
+}
+
+let guideForcedOpen = false;
+$('oauthEdit').onclick = () => {
+  guideForcedOpen = true;
+  $('oauthGuide').hidden = false;
+  $('oauthEdit').hidden = true;
+  $('clientId').focus();
+};
+
+function showClientResult(text, ok) {
+  $('clientResult').textContent = text;
+  $('clientResult').className = `field-msg ${ok ? 'ok' : 'err'}`;
+  $('clientResult').hidden = false;
+}
+
+async function afterKeySaved(status) {
+  driveState = status;
+  guideForcedOpen = false;
+  $('clientId').value = '';
+  $('clientSecret').value = '';
+  $('clientResult').hidden = true;
+  renderDrive();
+  toast('Google key saved. Now click "Sign in with Google".');
+  $('signIn').focus();
+}
+
+$('saveClient').onclick = async () => {
+  try {
+    await afterKeySaved(
+      await api.invoke('settings:setOAuthClient', { clientId: $('clientId').value, clientSecret: $('clientSecret').value })
+    );
+  } catch (e) {
+    showClientResult(cleanErr(e), false);
+  }
+};
 $('importOAuth').onclick = async () => {
   try {
-    driveState = await api.invoke('settings:importOAuth');
-    renderDrive();
-    if (driveState.configured) toast('Google client imported. Now sign in.');
+    const status = await api.invoke('settings:importOAuth');
+    if (status.configured && status.clientHint !== driveState.clientHint) await afterKeySaved(status);
+    else {
+      driveState = status;
+      renderDrive();
+    }
   } catch (e) {
-    toast(e.message.replace(/^Error invoking remote method '[^']+': (Error: )?/, ''), { error: true, ms: 7000 });
+    showClientResult(cleanErr(e), false);
   }
 };
 $('signIn').onclick = async () => {
   $('signIn').disabled = true;
-  $('accountText').textContent = 'Finish signing in in your browser…';
+  $('signInError').hidden = true;
+  $('accountText').textContent = 'Finish signing in in the browser window that just opened…';
+  $('cancelSignIn').hidden = false;
   try {
     driveState = await api.invoke('drive:signIn');
     toast('Signed in to Google Drive');
   } catch (e) {
-    toast(cleanErr(e), { error: true, ms: 7000 });
+    const msg = cleanErr(e);
+    if (msg !== 'Sign-in cancelled.') {
+      $('signInError').textContent = msg;
+      $('signInError').hidden = false;
+    }
   }
+  $('cancelSignIn').hidden = true;
   await refreshDrive();
 };
+$('cancelSignIn').onclick = () => api.invoke('drive:cancelSignIn');
 $('signOut').onclick = async () => {
   driveState = await api.invoke('drive:signOut');
   renderDrive();
@@ -363,6 +430,16 @@ function openSettings() {
   $('settings').showModal();
 }
 $('openSettings').onclick = openSettings;
+// Pressing Enter in a text box must not submit (and close) the dialog;
+// only the X button and the Esc key close it.
+$('settings').querySelector('form').addEventListener('submit', (e) => e.preventDefault());
+$('closeSettings').onclick = () => $('settings').close();
+$('clientSecret').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('saveClient').click();
+});
+$('folderInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('saveFolder').click();
+});
 for (const id of ['autoUpload', 'keepLocalCopy', 'hidePanelsFromRecording']) {
   $(id).onchange = async () => {
     await saveSettings({ [id]: $(id).checked });

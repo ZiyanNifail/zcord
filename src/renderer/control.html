@@ -117,28 +117,66 @@
       <form method="dialog" class="settings">
         <div class="settings-head">
           <h2 id="settingsTitle">Settings</h2>
-          <button class="icon-btn small" value="close" aria-label="Close settings" title="Close">
+          <button type="button" id="closeSettings" class="icon-btn small" aria-label="Close settings" title="Close">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
         </div>
 
         <h3>Google Drive</h3>
-        <div id="oauthStep" class="step">
-          <span class="step-num">1</span>
-          <div class="step-body">
-            <b>Connect zcord to Google</b>
-            <p class="muted">One-time setup: import the OAuth client file (Desktop app) from Google Cloud. The README has a 5-minute walkthrough.</p>
+        <div id="oauthStep" class="step col">
+          <div class="row">
+            <span class="step-num">1</span>
+            <div class="step-body">
+              <b>Give zcord a Google key</b>
+              <p class="muted" id="oauthSummary">One-time setup in Google Cloud, about 5 minutes. Sign in there with the same Gmail you'll upload to.</p>
+            </div>
+            <button type="button" id="oauthEdit" class="btn-link" hidden>Change</button>
           </div>
-          <button type="button" id="importOAuth" class="btn-secondary">Import client JSON…</button>
+
+          <div id="oauthGuide" class="guide">
+            <ol class="guide-list">
+              <li>
+                <span><b>Turn on Google Drive for a new project.</b> Click Open, create a project (name it "zcord") if asked, then click <b>Enable</b>.</span>
+                <button type="button" class="btn-secondary" data-cloud="enableApi">Open</button>
+              </li>
+              <li>
+                <span><b>Set up the sign-in screen.</b> Click <b>Get started</b>, app name "zcord", your Gmail as support email, audience <b>External</b>, your Gmail as contact, then <b>Create</b>.</span>
+                <button type="button" class="btn-secondary" data-cloud="branding">Open</button>
+              </li>
+              <li>
+                <span><b>Add yourself as a tester.</b> Under <b>Test users</b> click <b>Add users</b>, enter your Gmail, and <b>Save</b>.</span>
+                <button type="button" class="btn-secondary" data-cloud="audience">Open</button>
+              </li>
+              <li>
+                <span><b>Create the key.</b> Application type <b>Desktop app</b>, name "zcord", <b>Create</b>. Copy the Client ID and Client secret into the boxes below right away — Google only shows the secret once (or click <b>Download JSON</b> and import it).</span>
+                <button type="button" class="btn-secondary" data-cloud="client">Open</button>
+              </li>
+            </ol>
+            <div class="field">
+              <label class="label" for="clientId">Client ID</label>
+              <input id="clientId" type="text" placeholder="1234…apps.googleusercontent.com" autocomplete="off" spellcheck="false" />
+            </div>
+            <div class="field">
+              <label class="label" for="clientSecret">Client secret</label>
+              <div class="row">
+                <input id="clientSecret" type="text" placeholder="GOCSPX-…" autocomplete="off" spellcheck="false" />
+                <button type="button" id="saveClient" class="btn-primary-sm">Save key</button>
+              </div>
+            </div>
+            <p id="clientResult" class="field-msg" hidden></p>
+            <p class="muted">Downloaded the client's JSON file instead? <button type="button" id="importOAuth" class="btn-link inline">Import it</button></p>
+          </div>
         </div>
         <div class="step">
           <span class="step-num">2</span>
           <div class="step-body">
             <b>Google account</b>
             <p class="muted" id="accountText">Not signed in</p>
+            <p class="field-msg err" id="signInError" hidden></p>
           </div>
           <div class="row">
             <button type="button" id="signIn" class="btn-secondary">Sign in with Google</button>
+            <button type="button" id="cancelSignIn" class="btn-link" hidden>Cancel</button>
             <button type="button" id="signOut" class="btn-link" hidden>Sign out</button>
           </div>
         </div>

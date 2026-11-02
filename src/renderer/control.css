@@ -727,6 +727,9 @@ dialog {
   background: var(--panel);
   color: var(--fg);
 }
+dialog {
+  overflow: hidden; /* the form inside scrolls */
+}
 dialog::backdrop {
   background: rgba(0, 0, 0, 0.6);
 }
@@ -837,4 +840,74 @@ dialog::backdrop {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: 'source' 'side' 'recs';
   }
+}
+
+/* ------------------------------------------------- Google setup guide */
+.guide {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 4px;
+}
+.guide-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: g;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.guide-list li {
+  counter-increment: g;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.guide-list li::before {
+  content: counter(g, lower-alpha);
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--line-2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+.guide-list li span {
+  flex: 1;
+  min-width: 0;
+}
+.btn-primary-sm {
+  height: 42px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--blue);
+  color: var(--blue-ink);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.btn-primary-sm:hover:not(:disabled) {
+  background: #a4c4ff;
+}
+.btn-link.inline {
+  padding: 0;
+  font-size: inherit;
+  text-decoration: underline;
+}
+.field-msg.err {
+  color: var(--danger-fg);
+}
+.field-msg.ok {
+  color: var(--green);
 }

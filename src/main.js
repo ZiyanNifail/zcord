@@ -582,8 +582,11 @@ function notify(title, body, link) {
 
 function driveStatus() {
   const s = store.getSettings();
+  const creds = getCredentials();
   return {
-    configured: Boolean(getCredentials()),
+    configured: Boolean(creds),
+    // e.g. "1234…7lq.apps.googleusercontent.com" so the teacher can tell which client is saved
+    clientHint: creds ? creds.clientId.replace(/^(.{6}).*(.{3}\.apps\.googleusercontent\.com)$/, '$1…$2') : '',
     signedIn: drive.isSignedIn(),
     email: drive.account()?.email || null,
     folderId: s.folderId || '',
@@ -677,7 +680,15 @@ function registerIpc() {
       filters: [{ name: 'JSON', extensions: ['json'] }],
     });
     if (r.canceled || !r.filePaths[0]) return driveStatus();
-    store.importOAuthClient(r.filePaths[0]);
+    const before = getCredentials()?.clientId;
+    const saved = store.importOAuthClient(r.filePaths[0]);
+    if (before && before !== saved.clientId) drive.signOut(); // tokens belong to the old client
+    return driveStatus();
+  });
+  ipcMain.handle('settings:setOAuthClient', (_e, { clientId, clientSecret } = {}) => {
+    const before = getCredentials()?.clientId;
+    const saved = store.setOAuthClient({ clientId, clientSecret });
+    if (before && before !== saved.clientId) drive.signOut();
     return driveStatus();
   });
 

@@ -51,24 +51,40 @@ class Store {
     return next;
   }
 
-  // ---- OAuth client (from the JSON file downloaded from Google Cloud Console)
+  // ---- OAuth client (the teacher's own "Desktop app" client from Google Cloud)
   getOAuthClient(extraSearchPaths = []) {
     for (const file of [this.oauthFile, ...extraSearchPaths]) {
-      const json = readJson(file, null);
-      const parsed = parseOAuthClientJson(json);
-      if (parsed) return parsed;
+      const parsed = parseOAuthClientJson(readJson(file, null));
+      // A "Web application" client can never complete a desktop sign-in.
+      if (parsed && parsed.type !== 'web') return parsed;
     }
     return null;
   }
 
+  /** Import the JSON file Google Cloud lets you download for a client. */
   importOAuthClient(file) {
-    const json = readJson(file, null);
-    const parsed = parseOAuthClientJson(json);
+    const parsed = parseOAuthClientJson(readJson(file, null));
     if (!parsed) {
-      throw new Error('That file is not a Google OAuth client JSON. In Google Cloud Console create an OAuth client of type "Desktop app" and download its JSON.');
+      throw new Error(
+        'That file is not a Google client file. In Google Cloud open Clients, click the download icon next to your "Desktop" client, and pick that file.'
+      );
     }
-    writeJson(this.oauthFile, json);
-    return parsed;
+    if (parsed.type === 'web') throw new Error(WEB_CLIENT_MESSAGE);
+    return this.setOAuthClient(parsed);
+  }
+
+  /** Save a Client ID + secret the teacher pasted in. */
+  setOAuthClient({ clientId, clientSecret }) {
+    const id = String(clientId || '').trim();
+    const secret = String(clientSecret || '').trim();
+    if (!/^[\w-]+\.apps\.googleusercontent\.com$/.test(id)) {
+      throw new Error('That Client ID doesn\'t look right. It ends in ".apps.googleusercontent.com" — copy it again from Google Cloud → Clients.');
+    }
+    if (!secret) {
+      throw new Error('Paste the Client secret too. It is shown next to the Client ID in Google Cloud (it usually starts with "GOCSPX-").');
+    }
+    writeJson(this.oauthFile, { installed: { client_id: id, client_secret: secret } });
+    return { clientId: id, clientSecret: secret, type: 'installed' };
   }
 
   // ---- tokens
@@ -122,11 +138,15 @@ class Store {
   }
 }
 
+const WEB_CLIENT_MESSAGE =
+  'This client is a "Web application", which can\'t be used by a desktop app. In Google Cloud go to Clients → Create client, choose Application type "Desktop app", and use that one instead.';
+
 function parseOAuthClientJson(json) {
   if (!json || typeof json !== 'object') return null;
+  const type = json.installed ? 'installed' : json.web ? 'web' : 'installed';
   const c = json.installed || json.web || json;
   if (!c || typeof c.client_id !== 'string' || !c.client_id) return null;
-  return { clientId: c.client_id, clientSecret: c.client_secret || '' };
+  return { clientId: c.client_id, clientSecret: c.client_secret || '', type };
 }
 
 module.exports = { Store, parseOAuthClientJson };

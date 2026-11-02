@@ -158,7 +158,7 @@ class DriveClient {
               : `<h2>Sign-in did not complete</h2><p>${err ? String(err).replace(/[<>&]/g, '') : 'Unexpected response.'}</p>`) +
             '</body>'
         );
-        finish(ok ? null : new AuthError(err ? `Google sign-in failed: ${err}` : 'Google sign-in failed.'), gotCode);
+        finish(ok ? null : new AuthError(signInErrorMessage(err)), gotCode);
       });
 
       const timer = setTimeout(() => finish(new AuthError('Google sign-in timed out.')), timeoutMs);
@@ -209,7 +209,13 @@ class DriveClient {
     });
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
-      throw new AuthError(`Token exchange failed: ${json.error_description || json.error || res.status}`);
+      throw new AuthError(tokenErrorMessage(json, res.status));
+    }
+    // Google lets people untick individual permissions on the consent screen.
+    if (json.scope && !String(json.scope).split(' ').includes(SCOPES[0])) {
+      throw new AuthError(
+        'zcord needs permission to use your Google Drive, but that box was not ticked on Google\'s screen. Click "Sign in with Google" again and tick "See, edit, create, and delete all of your Google Drive files".'
+      );
     }
     if (!json.refresh_token) {
       throw new AuthError('Google did not return a refresh token. Remove zcord from your Google account permissions and sign in again.');
@@ -284,7 +290,7 @@ class DriveClient {
     );
     const json = await res.json().catch(() => ({}));
     if (res.status === 404) throw new UploadError('Folder not found, or your Google account has no access to it.', { status: 404 });
-    if (!res.ok) throw new UploadError(json.error?.message || `Drive error ${res.status}`, { status: res.status });
+    if (!res.ok) throw new UploadError(driveErrorMessage(json, res.status), { status: res.status });
     if (json.mimeType !== 'application/vnd.google-apps.folder') throw new UploadError('That link points to a file, not a folder.');
     if (json.capabilities && json.capabilities.canAddChildren === false) {
       throw new UploadError(`You can view "${json.name}" but cannot add files to it. Ask the owner for Editor access.`);
@@ -378,7 +384,7 @@ class DriveClient {
         const retryable = !res || res.status >= 500 || res.status === 429 || res.status === 408;
         if (!retryable) {
           const text = res ? await res.text().catch(() => '') : '';
-          throw new UploadError(`Drive rejected the upload (${res.status}). ${extractMessage(text)}`.trim(), {
+          throw new UploadError(driveErrorMessage(parseJson(text), res.status, 'Drive rejected the upload'), {
             status: res.status,
           });
         }
@@ -417,7 +423,7 @@ class DriveClient {
     );
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      throw new UploadError(`Could not start upload (${res.status}). ${extractMessage(text)}`.trim(), {
+      throw new UploadError(driveErrorMessage(parseJson(text), res.status, 'Could not start the upload'), {
         status: res.status,
         retryable: res.status >= 500 || res.status === 429,
       });
@@ -444,12 +450,49 @@ function nextOffset(res) {
   return m ? Number(m[1]) + 1 : 0;
 }
 
-function extractMessage(text) {
+function parseJson(text) {
   try {
-    return JSON.parse(text).error?.message || '';
+    return JSON.parse(text);
   } catch {
-    return '';
+    return {};
   }
+}
+
+const DRIVE_API_URL = 'https://console.cloud.google.com/apis/library/drive.googleapis.com';
+
+/** Turns Google's OAuth redirect errors into something a teacher can act on. */
+function signInErrorMessage(code) {
+  if (code === 'access_denied') {
+    return 'Google sign-in was cancelled or blocked. If Google said "Access blocked" or "has not completed the Google verification process", add your Gmail address under Google Cloud → Audience → Test users, then try again.';
+  }
+  if (code) return `Google sign-in failed (${code}). Try again, and check the setup steps in Settings.`;
+  return 'Google sign-in failed. Please try again.';
+}
+
+function tokenErrorMessage(json, status) {
+  switch (json.error) {
+    case 'invalid_client':
+    case 'unauthorized_client':
+      return 'Google did not accept the Client ID or Client secret. Copy both again from Google Cloud → Clients (use the "Desktop" client) and save them in Settings.';
+    case 'redirect_uri_mismatch':
+      return 'This Google client is not a "Desktop app" client. Create one with Application type "Desktop app" and use that.';
+    case 'invalid_grant':
+      return 'The sign-in took too long or was already used. Please click "Sign in with Google" again.';
+    default:
+      return `Google sign-in failed: ${json.error_description || json.error || `HTTP ${status}`}`;
+  }
+}
+
+/** Drive API errors, with the common setup mistakes spelled out. */
+function driveErrorMessage(json, status, prefix = 'Google Drive error') {
+  const message = (json && json.error && json.error.message) || '';
+  if (/has not been used in project|is disabled|SERVICE_DISABLED|accessNotConfigured/i.test(JSON.stringify(json || {}))) {
+    return `The Google Drive API is turned off for your Google Cloud project. Turn it on at ${DRIVE_API_URL} (make sure your zcord project is selected), wait a minute, then try again.`;
+  }
+  if (status === 403 && /insufficient|scope/i.test(message)) {
+    return 'zcord was not given permission to use Google Drive. Sign out in Settings, sign in again, and tick the Google Drive box on Google\'s permission screen.';
+  }
+  return `${prefix} (${status})${message ? `: ${message}` : ''}`;
 }
 
 function emailFromIdToken(idToken) {

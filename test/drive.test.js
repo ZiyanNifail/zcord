@@ -161,6 +161,7 @@ test('parseOAuthClientJson reads the Google Cloud "installed" format', () => {
   assert.deepEqual(parseOAuthClientJson({ installed: { client_id: 'a.apps.googleusercontent.com', client_secret: 's' } }), {
     clientId: 'a.apps.googleusercontent.com',
     clientSecret: 's',
+    type: 'installed',
   });
   assert.equal(parseOAuthClientJson({ foo: 1 }), null);
 });

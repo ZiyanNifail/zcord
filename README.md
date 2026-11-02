@@ -62,22 +62,30 @@ The installers are written to `dist/`.
 
 ## One-time Google Drive setup (about 5 minutes)
 
-zcord uploads with *your* Google account, so Google needs to know about the app once. You create a free "OAuth client" in Google Cloud and import it into zcord.
+zcord uploads with *your* Google account, so it needs a free "key" (an OAuth client) from Google Cloud once. Open zcord's ⚙️ **Settings**: step 1 walks you through it, and each **Open** button takes you to the right Google Cloud page. Sign in to Google Cloud with the same Gmail you'll upload to.
 
-1. Go to <https://console.cloud.google.com/> and create a project (for example "zcord").
-2. Open **APIs & Services → Library**, search for **Google Drive API** and click **Enable**.
-3. Open **Google Auth Platform** (also listed as **OAuth consent screen**):
-   - **Branding**: app name `zcord`, plus your email.
-   - **Audience**: if you use a school Google Workspace account, choose **Internal**. Otherwise choose **External** and add your own Gmail address under **Test users**.
-4. Open **Clients → Create client**, choose **Application type: Desktop app**, click **Create**, then **Download JSON**.
-5. In zcord, click the ⚙️ **Settings** button:
-   1. **Import client JSON…** and pick the file you just downloaded.
-   2. **Sign in with Google**. Your browser opens; allow access. (With an *External* app Google first warns that the app is unverified. Click **Advanced → Go to zcord**. This is expected for an app you set up yourself.)
-   3. Open your class recordings folder in Google Drive, copy the link from the address bar, paste it into **Class recordings folder**, and click **Save**. zcord checks that you're allowed to add files there.
+1. **Give zcord a Google key** (in Google Cloud):
+   1. **Turn on Google Drive for a new project.** Create a project (name it "zcord") if asked, then click **Enable**.
+   2. **Set up the sign-in screen.** Click **Get started**, app name `zcord`, your Gmail as support email, audience **External**, your Gmail as contact, then **Create**. (School Google Workspace account? Choose **Internal** instead.)
+   3. **Add yourself as a tester.** Under **Audience → Test users**, click **Add users**, enter your Gmail and **Save**.
+   4. **Create the key.** **Clients → Create client**, Application type **Desktop app**, name "zcord", **Create**. Copy the **Client ID** and **Client secret** into zcord and click **Save key**. Google shows the secret only once, so copy it right away, or click **Download JSON** and use zcord's **Import it** link instead.
+2. **Sign in with Google.** Your browser opens; choose your Gmail and allow access. Google will warn that the app is unverified. That's expected for an app you set up yourself: click **Continue**. On the permissions screen, make sure the **Google Drive** box is ticked.
+3. **Class recordings folder.** Open the folder in Google Drive, copy the link from the address bar, paste it into zcord and click **Save**. zcord checks that you're allowed to add files there.
 
 That's it. From now on every recording uploads into that folder when you click **End**.
 
-> **Weekly sign-in with "External" apps:** while an External app is in *Testing* mode, Google expires the sign-in after 7 days, and zcord will ask you to sign in again. To avoid this, either use **Internal** (school Workspace accounts) or, under **Audience**, click **Publish app**. You don't need Google's verification for personal use.
+### If it doesn't connect
+
+| What you see | What to do |
+| --- | --- |
+| **Sign in with Google** is greyed out | Finish step 1 first: save the Client ID and secret (or import the JSON file). |
+| Google says **"Access blocked"** or **"has not completed the Google verification process"** | Add your Gmail under **Audience → Test users** (step 1.3) and sign in again with that same Gmail. |
+| Google says **"redirect_uri_mismatch"**, or zcord says the client is a "Web application" | The key was created with the wrong type. Create a new one with Application type **Desktop app**. |
+| zcord says **"Google did not accept the Client ID or Client secret"** | Copy both again from **Clients**. If the secret is no longer shown, open the client, click **Add secret**, and use the new one. |
+| zcord says **"The Google Drive API is turned off"** | Do step 1.1 again with your zcord project selected (top-left of Google Cloud), then wait a minute. |
+| zcord says the Drive box **wasn't ticked** | Sign in again and tick the Google Drive permission. |
+
+> **Weekly sign-in with "External" apps:** while an External app is in *Testing* mode, Google expires the sign-in after 7 days, and zcord will ask you to sign in again. To avoid this, under **Audience** click **Publish app**. You don't need Google's verification for personal use.
 
 **Shared drives** (school "Team drives") are supported. You need *Contributor* access or higher on the folder.
 
