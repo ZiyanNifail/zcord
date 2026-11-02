@@ -1,4 +1,4 @@
-# ClassCast
+# zcord
 
 A desktop screen recorder for teaching. It does three things well:
 
@@ -12,12 +12,12 @@ Runs on Windows, macOS and Linux (Electron).
 
 ## How it works
 
-| You do | ClassCast does |
+| You do | zcord does |
 | --- | --- |
 | Pick **Entire screen**, type a lesson title, click **Start recording** | Records that monitor at up to 30 fps plus your microphone. A small floating toolbar appears. |
 | Switch to slides, a browser, a PDF… | Keeps recording. It captures the whole monitor (not one window), and Chromium's background throttling is switched off, so the video never freezes or goes black. |
 | Pick a pen in the toolbar (or press `Ctrl+Shift+D`) | A transparent layer covers the screen. Draw with the mouse or a pen tablet. The ink is captured in the video. Click the arrow-cursor button (or press `Esc`) to go back to using your apps. |
-| Click **End** (or press `Ctrl+Shift+E`) | Saves the video to `Videos/ClassCast Recordings` and uploads it to your Drive folder with a resumable upload. If the upload fails (say the Wi-Fi drops), ClassCast picks up where it stopped and retries automatically. |
+| Click **End** (or press `Ctrl+Shift+E`) | Saves the video to `Videos/zcord Recordings` and uploads it to your Drive folder with a resumable upload. If the upload fails (say the Wi-Fi drops), zcord picks up where it stopped and retries automatically. |
 
 On Windows and macOS the floating toolbar and the main window are **hidden from the recording**, so students see only your screen and your drawings. You can turn this off in Settings.
 
@@ -62,22 +62,22 @@ The installers are written to `dist/`.
 
 ## One-time Google Drive setup (about 5 minutes)
 
-ClassCast uploads with *your* Google account, so Google needs to know about the app once. You create a free "OAuth client" in Google Cloud and import it into ClassCast.
+zcord uploads with *your* Google account, so Google needs to know about the app once. You create a free "OAuth client" in Google Cloud and import it into zcord.
 
-1. Go to <https://console.cloud.google.com/> and create a project (for example "ClassCast").
+1. Go to <https://console.cloud.google.com/> and create a project (for example "zcord").
 2. Open **APIs & Services → Library**, search for **Google Drive API** and click **Enable**.
 3. Open **Google Auth Platform** (also listed as **OAuth consent screen**):
-   - **Branding**: app name `ClassCast`, plus your email.
+   - **Branding**: app name `zcord`, plus your email.
    - **Audience**: if you use a school Google Workspace account, choose **Internal**. Otherwise choose **External** and add your own Gmail address under **Test users**.
 4. Open **Clients → Create client**, choose **Application type: Desktop app**, click **Create**, then **Download JSON**.
-5. In ClassCast, click the ⚙️ **Settings** button:
+5. In zcord, click the ⚙️ **Settings** button:
    1. **Import client JSON…** and pick the file you just downloaded.
-   2. **Sign in with Google**. Your browser opens; allow access. (With an *External* app Google first warns that the app is unverified. Click **Advanced → Go to ClassCast**. This is expected for an app you set up yourself.)
-   3. Open your class recordings folder in Google Drive, copy the link from the address bar, paste it into **Class recordings folder**, and click **Save**. ClassCast checks that you're allowed to add files there.
+   2. **Sign in with Google**. Your browser opens; allow access. (With an *External* app Google first warns that the app is unverified. Click **Advanced → Go to zcord**. This is expected for an app you set up yourself.)
+   3. Open your class recordings folder in Google Drive, copy the link from the address bar, paste it into **Class recordings folder**, and click **Save**. zcord checks that you're allowed to add files there.
 
 That's it. From now on every recording uploads into that folder when you click **End**.
 
-> **Weekly sign-in with "External" apps:** while an External app is in *Testing* mode, Google expires the sign-in after 7 days, and ClassCast will ask you to sign in again. To avoid this, either use **Internal** (school Workspace accounts) or, under **Audience**, click **Publish app**. You don't need Google's verification for personal use.
+> **Weekly sign-in with "External" apps:** while an External app is in *Testing* mode, Google expires the sign-in after 7 days, and zcord will ask you to sign in again. To avoid this, either use **Internal** (school Workspace accounts) or, under **Audience**, click **Publish app**. You don't need Google's verification for personal use.
 
 **Shared drives** (school "Team drives") are supported. You need *Contributor* access or higher on the folder.
 
@@ -88,7 +88,7 @@ That's it. From now on every recording uploads into that folder when you click *
 - **Choose "Entire screen", not "A window".** Window capture can go black when that window is minimised, and drawings aren't part of the window. Entire screen avoids both.
 - **Two monitors?** Pick the monitor students should see. The drawing layer and toolbar open on that monitor.
 - **Computer sound** (videos you play in class) can be recorded on **Windows**. Tick *Also record computer sound*. On macOS/Linux only the microphone is recorded.
-- **macOS:** the first time, allow ClassCast under *System Settings → Privacy & Security → Screen Recording* (and *Microphone*), then restart the app.
+- **macOS:** the first time, allow zcord under *System Settings → Privacy & Security → Screen Recording* (and *Microphone*), then restart the app.
 - **Quality** (Settings): *High* (5 Mbps) keeps small text sharp. An hour of class is roughly 2 GB. *Standard* is about half that.
 - Recordings are saved in **1-second pieces straight to disk**, so a crash loses at most about a second, and long lessons don't use up memory.
 - Uploads that fail are retried automatically every few minutes and when the app starts. You can also press **Retry** in the *Recordings* list.
@@ -98,7 +98,7 @@ That's it. From now on every recording uploads into that folder when you click *
 ## Privacy
 
 - Your Google sign-in is stored on your computer only, encrypted with the operating system's keychain.
-- ClassCast talks only to Google (sign-in and Drive). There are no other servers, analytics or tracking.
+- zcord talks only to Google (sign-in and Drive). There are no other servers, analytics or tracking.
 - It asks for the Google Drive scope so it can write into a folder you created yourself. It never reads or changes anything else.
 
 ---

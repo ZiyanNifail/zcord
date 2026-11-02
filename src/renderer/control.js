@@ -1,6 +1,6 @@
 'use strict';
 
-const api = window.classcast;
+const api = window.zcord;
 const $ = (id) => document.getElementById(id);
 
 const QUALITY = {
@@ -558,7 +558,7 @@ async function startRecording() {
     const msg = cleanErr(e);
     toast(
       /permission|denied|NotAllowed/i.test(msg) && info.platform === 'darwin'
-        ? 'macOS blocked screen recording. Allow ClassCast in System Settings → Privacy & Security → Screen Recording, then restart ClassCast.'
+        ? 'macOS blocked screen recording. Allow zcord in System Settings → Privacy & Security → Screen Recording, then restart zcord.'
         : `Could not start recording: ${msg}`,
       { error: true, ms: 9000 }
     );
@@ -627,7 +627,7 @@ $('title').oninput = () => localStorage.setItem('lastTitle', $('title').value);
     banner.hidden = false;
     banner.textContent = '';
     banner.append(
-      el('span', {}, 'macOS needs permission for ClassCast to record your screen.'),
+      el('span', {}, 'macOS needs permission for zcord to record your screen.'),
       el('button', { type: 'button', class: 'btn-secondary', onclick: () => api.invoke('app:openScreenPermissionSettings') }, 'Open settings')
     );
   }

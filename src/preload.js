@@ -32,7 +32,7 @@ const INVOKE = new Set([
 const SEND = new Set(['toolbar:command', 'draw:update', 'draw:action']);
 const LISTEN = new Set(['rec:state', 'draw:state', 'draw:action', 'recorder:command', 'uploads:changed', 'drive:changed']);
 
-contextBridge.exposeInMainWorld('classcast', {
+contextBridge.exposeInMainWorld('zcord', {
   invoke(channel, ...args) {
     if (!INVOKE.has(channel)) throw new Error(`Blocked channel: ${channel}`);
     return ipcRenderer.invoke(channel, ...args);

@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Google Drive client used by ClassCast.
+ * Google Drive client used by zcord.
  *
  * - OAuth 2.0 "installed app" flow with PKCE and a loopback redirect
  *   (http://127.0.0.1:<random port>), which is what Google recommends for
@@ -151,10 +151,10 @@ class DriveClient {
         const ok = !err && gotCode && gotState === state;
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(
-          `<!doctype html><meta charset="utf-8"><title>ClassCast</title>` +
+          `<!doctype html><meta charset="utf-8"><title>zcord</title>` +
             `<body style="font-family:system-ui;text-align:center;padding:4rem">` +
             (ok
-              ? '<h2>Signed in to ClassCast ✅</h2><p>You can close this tab and go back to the app.</p>'
+              ? '<h2>Signed in to zcord ✅</h2><p>You can close this tab and go back to the app.</p>'
               : `<h2>Sign-in did not complete</h2><p>${err ? String(err).replace(/[<>&]/g, '') : 'Unexpected response.'}</p>`) +
             '</body>'
         );
@@ -212,7 +212,7 @@ class DriveClient {
       throw new AuthError(`Token exchange failed: ${json.error_description || json.error || res.status}`);
     }
     if (!json.refresh_token) {
-      throw new AuthError('Google did not return a refresh token. Remove ClassCast from your Google account permissions and sign in again.');
+      throw new AuthError('Google did not return a refresh token. Remove zcord from your Google account permissions and sign in again.');
     }
     const tokens = {
       access_token: json.access_token,

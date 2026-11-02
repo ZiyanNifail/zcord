@@ -141,7 +141,7 @@ function makeClient(fake, tokens, extra = {}) {
 }
 
 function tempFile(size) {
-  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'classcast-')), 'lesson.mp4');
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'zcord-')), 'lesson.mp4');
   const data = crypto.randomBytes(size);
   fs.writeFileSync(file, data);
   return { file, data };
@@ -260,7 +260,7 @@ test('a revoked sign-in clears tokens and raises AuthError', async () => {
 });
 
 test('Store keeps settings, tokens and the upload queue on disk', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'classcast-store-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'zcord-store-'));
   const store = new Store(dir, { autoUpload: true, folderId: '' });
   assert.equal(store.getSettings().autoUpload, true);
   store.setSettings({ folderId: 'abc' });

@@ -3,7 +3,7 @@
 // Floating recording toolbar. On Windows and macOS it is excluded from the
 // recording (content protection), so students only see the screen + ink.
 
-const api = window.classcast;
+const api = window.zcord;
 const $ = (id) => document.getElementById(id);
 
 const SIZES = [3, 6, 10];

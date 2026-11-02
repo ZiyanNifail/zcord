@@ -4,7 +4,7 @@
 // Because it is a real window on the screen, everything drawn here is seen by
 // the teacher AND captured in the screen recording.
 
-const api = window.classcast;
+const api = window.zcord;
 const canvas = document.getElementById('ink');
 const ctx = canvas.getContext('2d');
 

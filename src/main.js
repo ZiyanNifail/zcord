@@ -25,7 +25,7 @@ const { DriveClient, AuthError, parseFolderId } = require('./drive');
 // --------------------------------------------------------------------------
 // Never let Chromium throttle or pause us while the teacher is in another
 // app. These switches are what keep the recording from freezing or going
-// black when the ClassCast window is hidden, minimised or covered.
+// black when the zcord window is hidden, minimised or covered.
 // --------------------------------------------------------------------------
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
@@ -43,7 +43,7 @@ const RENDERER = path.join(__dirname, 'renderer');
 function defaultSaveDir() {
   for (const key of ['videos', 'documents', 'home']) {
     try {
-      return path.join(app.getPath(key), 'ClassCast Recordings');
+      return path.join(app.getPath(key), 'zcord Recordings');
     } catch {
       /* try next */
     }
@@ -89,7 +89,7 @@ function createMainWindow() {
     height: 820,
     minWidth: 760,
     minHeight: 600,
-    title: 'ClassCast',
+    title: 'zcord',
     backgroundColor: '#0e0f12',
     show: false,
     webPreferences: commonPrefs,
@@ -123,7 +123,7 @@ function createMainWindow() {
 }
 
 function applyContentProtection() {
-  // Hides ClassCast's own panels from the recording (Windows & macOS).
+  // Hides zcord's own panels from the recording (Windows & macOS).
   const on = store.getSettings().hidePanelsFromRecording;
   for (const w of [mainWin, toolbarWin]) if (w && !w.isDestroyed()) w.setContentProtection(Boolean(on));
 }
@@ -273,7 +273,7 @@ async function fetchSources() {
     if (lastSources.some((s) => s.id.startsWith('screen:'))) break;
     await new Promise((r) => setTimeout(r, 400));
   }
-  const ownTitles = new Set(['ClassCast', 'ClassCast toolbar', 'ClassCast overlay']);
+  const ownTitles = new Set(['zcord', 'zcord toolbar', 'zcord overlay']);
   return lastSources
     .filter((s) => !ownTitles.has(s.name))
     .map((s) => ({
@@ -397,7 +397,7 @@ async function startRecording({ title, mimeType, ext }) {
     if (!rec) return;
     rec.writeError = err;
     send(mainWin, 'recorder:command', 'stop');
-    dialog.showErrorBox('ClassCast could not save the recording', `${err.message}\n\nIs the disk full?`);
+    dialog.showErrorBox('zcord could not save the recording', `${err.message}\n\nIs the disk full?`);
   });
 
   createRecordingWindows(targetDisplay(selectedSourceId));
@@ -593,8 +593,8 @@ function driveStatus() {
 }
 
 function getCredentials() {
-  const fromEnv = process.env.CLASSCAST_GOOGLE_CLIENT_ID
-    ? { clientId: process.env.CLASSCAST_GOOGLE_CLIENT_ID, clientSecret: process.env.CLASSCAST_GOOGLE_CLIENT_SECRET || '' }
+  const fromEnv = process.env.ZCORD_GOOGLE_CLIENT_ID
+    ? { clientId: process.env.ZCORD_GOOGLE_CLIENT_ID, clientSecret: process.env.ZCORD_GOOGLE_CLIENT_SECRET || '' }
     : null;
   return (
     fromEnv ||
@@ -765,7 +765,7 @@ app.whenReady().then(() => {
     saveTokens: (t) => store.saveTokens(t),
     openExternal: (url) => shell.openExternal(url),
     // Development/testing only: point the client at a fake Google server.
-    endpoints: process.env.CLASSCAST_DRIVE_ENDPOINTS ? JSON.parse(process.env.CLASSCAST_DRIVE_ENDPOINTS) : undefined,
+    endpoints: process.env.ZCORD_DRIVE_ENDPOINTS ? JSON.parse(process.env.ZCORD_DRIVE_ENDPOINTS) : undefined,
   });
 
   // Anything stuck in "uploading" was interrupted by a crash/quit.
