@@ -1,0 +1,44 @@
+{
+  "name": "classcast",
+  "productName": "ClassCast",
+  "version": "1.0.0",
+  "description": "Screen recorder for teachers: reliable full-screen capture, on-screen drawing, and automatic upload to a Google Drive class-recordings folder.",
+  "main": "src/main.js",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "dist:linux": "electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "^45.2.1",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "app.classcast.recorder",
+    "productName": "ClassCast",
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.education",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "ClassCast records your voice while you teach.",
+        "NSCameraUsageDescription": "ClassCast does not use the camera, but macOS may ask on its behalf."
+      }
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Education"
+    }
+  }
+}

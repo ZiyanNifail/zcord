@@ -1,0 +1,229 @@
+@font-face {
+  font-family: 'Inter';
+  src: url('fonts/Inter.woff2') format('woff2');
+  font-weight: 100 900;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('fonts/JetBrainsMono.woff2') format('woff2');
+  font-weight: 100 800;
+}
+
+/* Direction A · Studio */
+:root {
+  --bar: #1a1c21;
+  --bar-line: #2c3038;
+  --inset: #23262d;
+  --fg: #ecedef;
+  --muted: #9ba1ab;
+  --hover: rgba(255, 255, 255, 0.08);
+  --blue: #8ab4ff;
+  --blue-ink: #0e0f12;
+  --red: #d7372f;
+  --red-dot: #ff453a;
+}
+* {
+  box-sizing: border-box;
+}
+[hidden] {
+  display: none !important;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: transparent;
+  color: var(--fg);
+  font: 600 13px/1 Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+svg.fill,
+.fill {
+  fill: currentColor;
+  stroke: none;
+}
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+button:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 1px;
+}
+
+.bar {
+  margin: 4px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 7px 0 2px;
+  background: var(--bar);
+  border: 1px solid var(--bar-line);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+.bar > * {
+  flex: none;
+}
+.grip {
+  -webkit-app-region: drag;
+  height: 100%;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  color: #5d636e;
+  cursor: grab;
+}
+.rec {
+  -webkit-app-region: drag;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 78px;
+  padding-right: 4px;
+}
+.rec-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--red-dot);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+#time {
+  font: 600 15px var(--mono, 'JetBrains Mono', ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
+}
+.rec.paused .rec-dot {
+  background: var(--muted);
+  animation: none;
+}
+.rec.paused #time {
+  color: var(--muted);
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.btn {
+  height: 44px;
+  min-width: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn:hover {
+  background: var(--hover);
+}
+.btn svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+.btn.end {
+  padding: 0 16px;
+  background: var(--red);
+  color: #fff;
+  font-weight: 700;
+}
+.btn.end svg {
+  width: 16px;
+  height: 16px;
+}
+.btn.end:hover {
+  background: #e0443c;
+}
+.btn[aria-pressed='true'] {
+  background: var(--blue);
+  color: var(--blue-ink);
+}
+.sep {
+  width: 1px;
+  height: 28px;
+  margin: 0 5px;
+  background: var(--bar-line);
+}
+
+.tools {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--inset);
+}
+.tool {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  display: grid;
+  place-items: center;
+}
+.tool svg {
+  width: 19px;
+  height: 19px;
+}
+.tool:hover {
+  background: var(--hover);
+}
+.tool.on {
+  background: var(--blue);
+  color: var(--blue-ink);
+}
+.tool[data-tool='cursor'] svg {
+  fill: currentColor;
+  stroke-width: 1.5;
+}
+
+.colors {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 0 4px;
+}
+.swatch {
+  width: 28px;
+  height: 28px;
+  padding: 3px;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+}
+.swatch span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+.swatch:hover {
+  border-color: #4a505b;
+}
+.swatch.on {
+  border-color: #fff;
+}
+.size-dot {
+  display: block;
+  border-radius: 50%;
+  background: currentColor;
+}

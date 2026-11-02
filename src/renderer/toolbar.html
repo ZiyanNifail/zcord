@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'" />
+    <title>ClassCast toolbar</title>
+    <link rel="stylesheet" href="toolbar.css" />
+  </head>
+  <body>
+    <div class="bar" role="toolbar" aria-label="Recording controls">
+      <div class="grip" title="Drag to move" aria-hidden="true">
+        <svg viewBox="0 0 8 20" width="8" height="20"><g class="fill"><circle cx="2" cy="4" r="1.3" /><circle cx="6" cy="4" r="1.3" /><circle cx="2" cy="10" r="1.3" /><circle cx="6" cy="10" r="1.3" /><circle cx="2" cy="16" r="1.3" /><circle cx="6" cy="16" r="1.3" /></g></svg>
+      </div>
+
+      <div class="rec" id="rec" title="Recording time">
+        <span class="rec-dot"></span><span id="time">00:00</span>
+      </div>
+
+      <button id="pause" class="btn" type="button" aria-label="Pause" title="Pause (Ctrl+Shift+P)">
+        <svg id="icoPause" class="fill" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
+        <svg id="icoResume" class="fill" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M7 5l12 7-12 7z" /></svg>
+      </button>
+      <button id="stop" class="btn end" type="button" title="End recording and upload (Ctrl+Shift+E)">
+        <svg class="fill" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2.5" /></svg>
+        <span>End</span>
+      </button>
+
+      <div class="sep"></div>
+
+      <div class="tools" id="tools">
+        <button class="tool" type="button" data-tool="cursor" aria-label="Stop drawing" title="Use your apps — stop drawing (Esc)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3l14 7-6 2-2 6z" /></svg>
+        </button>
+        <button class="tool" type="button" data-tool="pen" aria-label="Pen" title="Pen (1)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-5L16 4l4 4L9 19z" /></svg>
+        </button>
+        <button class="tool" type="button" data-tool="highlighter" aria-label="Highlighter" title="Highlighter (2)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 15l-3 3v3h3l3-3M9 15l8-8 3 3-8 8z" /></svg>
+        </button>
+        <button class="tool" type="button" data-tool="arrow" aria-label="Arrow" title="Arrow (3)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5h-8M19 5v8" /></svg>
+        </button>
+        <button class="tool" type="button" data-tool="rect" aria-label="Box" title="Box (4)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="12" rx="1.5" /></svg>
+        </button>
+        <button class="tool" type="button" data-tool="ellipse" aria-label="Circle" title="Circle (5)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="12" rx="8" ry="6.5" /></svg>
+        </button>
+        <button class="tool" type="button" data-tool="laser" aria-label="Laser pointer" title="Laser pointer (6)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" /><circle cx="12" cy="12" r="8" opacity="0.5" /></svg>
+        </button>
+      </div>
+
+      <div class="colors" id="colors">
+        <button class="swatch" type="button" data-color="#ff3b30" style="--c: #ff3b30" aria-label="Red" title="Red"><span></span></button>
+        <button class="swatch" type="button" data-color="#ffd60a" style="--c: #ffd60a" aria-label="Yellow" title="Yellow"><span></span></button>
+        <button class="swatch" type="button" data-color="#30d158" style="--c: #30d158" aria-label="Green" title="Green"><span></span></button>
+        <button class="swatch" type="button" data-color="#0a84ff" style="--c: #0a84ff" aria-label="Blue" title="Blue"><span></span></button>
+        <button class="swatch" type="button" data-color="#ffffff" style="--c: #ffffff" aria-label="White" title="White"><span></span></button>
+        <button class="swatch" type="button" data-color="#111111" style="--c: #111111" aria-label="Black" title="Black"><span></span></button>
+      </div>
+
+      <div class="sep"></div>
+
+      <button id="size" class="btn" type="button" aria-label="Line thickness" title="Line thickness"><span class="size-dot" id="sizeDot"></span></button>
+      <button id="fade" class="btn" type="button" aria-label="Disappearing ink" aria-pressed="false" title="Disappearing ink — marks fade after a few seconds">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z" /></svg>
+      </button>
+      <button id="undo" class="btn" type="button" aria-label="Undo" title="Undo (Ctrl+Shift+Z)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7L4 12l5 5M4 12h11a5 5 0 010 10h-3" /></svg>
+      </button>
+      <button id="clear" class="btn" type="button" aria-label="Clear all drawings" title="Clear all drawings (Ctrl+Shift+C)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13" /></svg>
+      </button>
+    </div>
+    <script src="toolbar.js"></script>
+  </body>
+</html>

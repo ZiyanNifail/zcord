@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'" />
+    <title>ClassCast overlay</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: transparent;
+        user-select: none;
+      }
+      canvas {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+      }
+      body.drawing canvas {
+        cursor: crosshair;
+      }
+      body.drawing.laser canvas {
+        cursor: none;
+      }
+      /* Thin frame so the teacher can see drawing mode is on. */
+      #frame {
+        position: fixed;
+        inset: 0;
+        border: 3px solid transparent;
+        pointer-events: none;
+        transition: border-color 0.15s;
+      }
+      body.drawing #frame {
+        border-color: rgba(255, 59, 48, 0.55);
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="ink"></canvas>
+    <div id="frame"></div>
+    <script src="overlay.js"></script>
+  </body>
+</html>
