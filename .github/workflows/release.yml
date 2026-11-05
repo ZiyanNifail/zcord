@@ -1,12 +1,19 @@
 name: Build installers
 
-# Push a tag like v1.1.0 to build Windows, macOS and Linux installers and
-# attach them to a GitHub Release. "Run workflow" on the Actions tab builds
-# them without making a release (download them from the run's Artifacts).
+# Builds Windows, macOS and Linux installers.
+#  - Actions tab → "Build installers" → Run workflow:
+#      leave "Release version" empty to just build (download from the run's Artifacts),
+#      or type a version like 1.2.0 to also publish a GitHub Release with the installers.
+#  - Or push a tag like v1.2.0.
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Release version to publish (e.g. 1.2.0). Leave empty to only build.'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -57,9 +64,11 @@ jobs:
           if-no-files-found: error
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.release_version != ''
     needs: build
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('v{0}', inputs.release_version) }}
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -68,5 +77,8 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.TAG }}
+          name: zcord ${{ env.TAG }}
+          target_commitish: ${{ github.sha }}
           files: installers/*
           generate_release_notes: true
