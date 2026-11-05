@@ -100,18 +100,11 @@ svg {
   margin-right: auto;
 }
 .logo {
+  display: block;
   width: 28px;
   height: 28px;
-  border-radius: 8px;
-  background: var(--red);
-  display: grid;
-  place-items: center;
-}
-.logo span {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #fff;
+  border-radius: 7px;
+  box-shadow: 0 0 0 1px #2c3038; /* keeps the dark tile visible on the dark header */
 }
 .wordmark {
   font-weight: 700;

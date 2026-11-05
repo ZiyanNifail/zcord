@@ -1,0 +1,72 @@
+name: Build installers
+
+# Push a tag like v1.1.0 to build Windows, macOS and Linux installers and
+# attach them to a GitHub Release. "Run workflow" on the Actions tab builds
+# them without making a release (download them from the run's Artifacts).
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: Windows, os: windows-latest, files: 'dist/*.exe' }
+          - { name: macOS, os: macos-latest, files: 'dist/*.dmg' }
+          - { name: Linux, os: ubuntu-latest, files: 'dist/*.AppImage' }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm test
+
+      # Private builds only: pre-configure Google + Drive from repository
+      # secrets. Does nothing when the secrets aren't set (public builds).
+      - name: Add personal setup (if configured)
+        shell: bash
+        env:
+          ZCORD_GOOGLE_CLIENT_ID: ${{ secrets.ZCORD_GOOGLE_CLIENT_ID }}
+          ZCORD_GOOGLE_CLIENT_SECRET: ${{ secrets.ZCORD_GOOGLE_CLIENT_SECRET }}
+          ZCORD_DRIVE_FOLDER: ${{ secrets.ZCORD_DRIVE_FOLDER }}
+          ZCORD_DRIVE_FOLDER_NAME: ${{ secrets.ZCORD_DRIVE_FOLDER_NAME }}
+        run: node scripts/write-config-from-env.js
+
+      - name: Build installer
+        run: npm run dist
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false' # unsigned builds; see SETUP.md for first-launch steps
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zcord-${{ matrix.name }}
+          path: ${{ matrix.files }}
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: installers
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: installers/*
+          generate_release_notes: true

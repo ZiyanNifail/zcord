@@ -2,3 +2,7 @@ node_modules/
 dist/
 google-oauth.json
 *.log
+
+# Your personal setup (Google key + folder). Never commit it to a public repo.
+# In a PRIVATE repo you can add it on purpose with: git add -f zcord.config.json
+zcord.config.json

@@ -90,6 +90,7 @@ function createMainWindow() {
     minWidth: 760,
     minHeight: 600,
     title: 'zcord',
+    icon: path.join(__dirname, 'assets', 'icon.png'),
     backgroundColor: '#0e0f12',
     show: false,
     webPreferences: commonPrefs,
@@ -795,6 +796,9 @@ app.on('second-instance', () => {
 });
 
 app.whenReady().then(() => {
+  if (IS_WIN) app.setAppUserModelId('app.zcord.recorder'); // notifications say "zcord"
+  if (IS_MAC && !app.isPackaged) app.dock?.setIcon(path.join(__dirname, 'assets', 'icon.png'));
+
   store = new Store(
     app.getPath('userData'),
     {

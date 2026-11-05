@@ -124,7 +124,7 @@ function renderSources() {
   if (!sel) $('previewEmpty').textContent = sourcesLoaded ? 'No screen selected' : 'Finding your screens…';
   $('previewName').textContent = sel ? `Preview · ${sel.name}` : 'Nothing selected';
 
-  for (const b of document.querySelectorAll('.seg button')) {
+  for (const b of document.querySelectorAll('.seg [data-tab]')) {
     const on = b.dataset.tab === tab;
     b.classList.toggle('on', on);
     b.setAttribute('aria-selected', on ? 'true' : 'false');
@@ -133,7 +133,7 @@ function renderSources() {
   $('screenNote').hidden = tab !== 'screen';
 }
 
-for (const b of document.querySelectorAll('.seg button')) {
+for (const b of document.querySelectorAll('.seg [data-tab]')) {
   b.onclick = () => {
     tab = b.dataset.tab;
     const current = sources.find((s) => s.id === selectedId);
