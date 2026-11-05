@@ -11,7 +11,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const { DriveClient, AuthError, UploadError } = require('../src/drive');
-const { Store } = require('../src/store');
+const { Store, readProjectConfig, writeProjectConfig } = require('../src/store');
 
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive';
 
@@ -200,4 +200,32 @@ test('setup: a "Web application" client file is rejected with an explanation', (
   const desktopFile = path.join(dir, 'desktop.json');
   fs.writeFileSync(desktopFile, JSON.stringify({ installed: { client_id: '2-b.apps.googleusercontent.com', client_secret: 'GOCSPX-y' } }));
   assert.equal(store.importOAuthClient(desktopFile).clientId, '2-b.apps.googleusercontent.com');
+});
+
+test('setup file: round-trips the key and folder, never tokens', () => {
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'zcord-cfg-')), 'zcord.config.json');
+  writeProjectConfig(file, {
+    google: { clientId: '1-a.apps.googleusercontent.com', clientSecret: 'GOCSPX-z', refresh_token: 'must-not-leak' },
+    drive: { folderId: 'F1', folderName: 'Class Recordings', folderLink: 'https://drive.google.com/drive/folders/F1' },
+  });
+  const text = fs.readFileSync(file, 'utf8');
+  assert.doesNotMatch(text, /refresh_token|must-not-leak/);
+  assert.deepEqual(readProjectConfig(file), {
+    google: { clientId: '1-a.apps.googleusercontent.com', clientSecret: 'GOCSPX-z', type: 'installed' },
+    drive: { folderId: 'F1', folderName: 'Class Recordings', folderLink: 'https://drive.google.com/drive/folders/F1' },
+  });
+});
+
+test('setup file: missing, broken or partial files are handled', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'zcord-cfg-'));
+  assert.equal(readProjectConfig(path.join(dir, 'nope.json')), null);
+  fs.writeFileSync(path.join(dir, 'broken.json'), '{ not json');
+  assert.equal(readProjectConfig(path.join(dir, 'broken.json')), null);
+  fs.writeFileSync(path.join(dir, 'folder-only.json'), JSON.stringify({ drive: { folderId: 'F2' } }));
+  assert.deepEqual(readProjectConfig(path.join(dir, 'folder-only.json')), {
+    google: null,
+    drive: { folderId: 'F2', folderName: '', folderLink: '' },
+  });
+  fs.writeFileSync(path.join(dir, 'bad-id.json'), JSON.stringify({ google: { clientId: 'oops', clientSecret: 'x' } }));
+  assert.equal(readProjectConfig(path.join(dir, 'bad-id.json')), null);
 });

@@ -6,6 +6,8 @@ A desktop screen recorder for teaching. It does three things well:
 2. **Lets you draw on the screen** (pen, highlighter, arrow, box, circle, laser pointer) to point things out. The ink shows up in the recording.
 3. **Uploads the recording to your class recordings folder in Google Drive** as soon as you click **End**.
 
+It also cleans up your voice: **noise cancellation** removes fans, typing, traffic and hum, and **Test** lets you hear yourself before you start.
+
 Runs on Windows, macOS and Linux (Electron).
 
 ---
@@ -60,6 +62,17 @@ The installers are written to `dist/`.
 
 ---
 
+## Your microphone
+
+- **Test** (next to the microphone list) records 5 seconds and plays them back, with the same noise cancellation the recording will use. Click it again to stop early.
+- **Noise cancellation** has three settings:
+  - **Strong** (default): an AI noise remover ([RNNoise](https://github.com/xiph/rnnoise)) that runs on your computer. It takes out fans, air-con, typing, traffic and hum while keeping your voice. In our test with fan noise, the background dropped by about 40 dB and the voice stayed at the same loudness.
+  - **Standard**: the lighter, built-in noise suppression used by video-call apps.
+  - **Off**: your microphone exactly as it is. Use it for a studio mic in a quiet room, or for recording music.
+- The level meter shows your voice *after* noise cancellation, so if it stays still while the room is noisy, the noise is being removed.
+
+---
+
 ## One-time Google Drive setup (about 5 minutes)
 
 zcord uploads with *your* Google account, so it needs a free "key" (an OAuth client) from Google Cloud once. Open zcord's ⚙️ **Settings**: step 1 walks you through it, and each **Open** button takes you to the right Google Cloud page. Sign in to Google Cloud with the same Gmail you'll upload to.
@@ -87,6 +100,22 @@ That's it. From now on every recording uploads into that folder when you click *
 
 > **Weekly sign-in with "External" apps:** while an External app is in *Testing* mode, Google expires the sign-in after 7 days, and zcord will ask you to sign in again. To avoid this, under **Audience** click **Publish app**. You don't need Google's verification for personal use.
 
+### Use the same setup on another computer
+
+zcord can save your Google key and class recordings folder into a file called `zcord.config.json` in the zcord folder. With that file present, zcord on another computer starts already set up: you only click **Sign in with Google** once there.
+
+1. **Make your GitHub repository private first.** On GitHub open the repo → **Settings** → **General** → scroll to **Danger Zone** → **Change visibility** → **Private**. The file contains your Client secret, so it must not be in a public repo. GitHub may also refuse the push from a public repo, because it detects Google secrets.
+2. In zcord: **Settings** → **Other computers** → **Save setup file**. (Set your class recordings folder first so it's included.)
+3. In the zcord folder, run:
+   ```bash
+   git add zcord.config.json
+   git commit -m "Add zcord setup"
+   git push
+   ```
+4. On the other computer: `git clone`, `npm install`, `npm start`, then **Settings** → **Sign in with Google**.
+
+The file never contains your sign-in. Each computer signs in to Google separately, so losing a laptop never exposes the others, and you can sign one out on its own. If you'd rather not use GitHub for this, copy `zcord.config.json` into the zcord folder on the other computer by USB stick or email to yourself.
+
 **Shared drives** (school "Team drives") are supported. You need *Contributor* access or higher on the folder.
 
 ---
@@ -107,6 +136,7 @@ That's it. From now on every recording uploads into that folder when you click *
 
 - Your Google sign-in is stored on your computer only, encrypted with the operating system's keychain.
 - zcord talks only to Google (sign-in and Drive). There are no other servers, analytics or tracking.
+- Noise cancellation and the mic test run entirely on your computer. Your audio isn't sent anywhere until the finished recording uploads to your Drive.
 - It asks for the Google Drive scope so it can write into a folder you created yourself. It never reads or changes anything else.
 
 ---
@@ -121,6 +151,8 @@ src/
   preload.js         Safe bridge between the windows and the main process
   renderer/
     control.*        Main window: pick screen, mic, Drive settings, recordings list, MediaRecorder
+    mic.js           Microphone pipeline: noise cancellation (Off / Standard / Strong), level, mic test
+    vendor/rnnoise/  RNNoise noise-suppression model (WebAssembly) and its licences
     toolbar.*        Floating recording toolbar (timer, pause, end, drawing tools)
     overlay.*        Transparent full-screen drawing layer
 test/

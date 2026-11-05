@@ -138,6 +138,34 @@ class Store {
   }
 }
 
+/**
+ * zcord.config.json lives next to package.json so a setup can travel with
+ * the code (commit it to a PRIVATE repo, or copy it across). It holds the
+ * Google key and the Drive folder, never sign-in tokens.
+ */
+function readProjectConfig(file) {
+  const json = readJson(file, null);
+  if (!json || typeof json !== 'object') return null;
+  const g = json.google || {};
+  const d = json.drive || {};
+  const google =
+    typeof g.clientId === 'string' && /\.apps\.googleusercontent\.com$/.test(g.clientId.trim())
+      ? { clientId: g.clientId.trim(), clientSecret: String(g.clientSecret || '').trim(), type: 'installed' }
+      : null;
+  const drive = typeof d.folderId === 'string' && d.folderId ? { folderId: d.folderId, folderName: d.folderName || '', folderLink: d.folderLink || '' } : null;
+  return google || drive ? { google, drive } : null;
+}
+
+function writeProjectConfig(file, { google, drive }) {
+  const out = {
+    $comment:
+      'zcord setup: Google key + class recordings folder. Keep this out of PUBLIC repositories. Sign-in tokens are never stored here; each computer signs in once.',
+  };
+  if (google) out.google = { clientId: google.clientId, clientSecret: google.clientSecret };
+  if (drive && drive.folderId) out.drive = { folderId: drive.folderId, folderName: drive.folderName || '', folderLink: drive.folderLink || '' };
+  fs.writeFileSync(file, JSON.stringify(out, null, 2) + '\n');
+}
+
 const WEB_CLIENT_MESSAGE =
   'This client is a "Web application", which can\'t be used by a desktop app. In Google Cloud go to Clients → Create client, choose Application type "Desktop app", and use that one instead.';
 
@@ -149,4 +177,4 @@ function parseOAuthClientJson(json) {
   return { clientId: c.client_id, clientSecret: c.client_secret || '', type };
 }
 
-module.exports = { Store, parseOAuthClientJson };
+module.exports = { Store, parseOAuthClientJson, readProjectConfig, writeProjectConfig };

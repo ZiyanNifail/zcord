@@ -23,7 +23,8 @@
     "productName": "zcord",
     "files": [
       "src/**/*",
-      "package.json"
+      "package.json",
+      "zcord.config.json"
     ],
     "win": {
       "target": "nsis"

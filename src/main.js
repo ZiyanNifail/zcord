@@ -19,7 +19,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { once } = require('node:events');
 
-const { Store } = require('./store');
+const { Store, readProjectConfig, writeProjectConfig } = require('./store');
 const { DriveClient, AuthError, parseFolderId } = require('./drive');
 
 // --------------------------------------------------------------------------
@@ -586,6 +586,8 @@ function driveStatus() {
   return {
     configured: Boolean(creds),
     // e.g. "1234…7lq.apps.googleusercontent.com" so the teacher can tell which client is saved
+    projectConfigFile: projectConfig()?.file || null,
+    canWriteProjectConfig: !app.isPackaged,
     clientHint: creds ? creds.clientId.replace(/^(.{6}).*(.{3}\.apps\.googleusercontent\.com)$/, '$1…$2') : '',
     signedIn: drive.isSignedIn(),
     email: drive.account()?.email || null,
@@ -595,17 +597,35 @@ function driveStatus() {
   };
 }
 
+// The setup file that can travel with the code (see README: "Use on another computer").
+function projectConfigPath() {
+  return path.join(app.getAppPath(), 'zcord.config.json');
+}
+
+function projectConfig() {
+  for (const file of [projectConfigPath(), path.join(process.resourcesPath || '', 'zcord.config.json')]) {
+    const cfg = readProjectConfig(file);
+    if (cfg) return { ...cfg, file };
+  }
+  return null;
+}
+
 function getCredentials() {
   const fromEnv = process.env.ZCORD_GOOGLE_CLIENT_ID
     ? { clientId: process.env.ZCORD_GOOGLE_CLIENT_ID, clientSecret: process.env.ZCORD_GOOGLE_CLIENT_SECRET || '' }
     : null;
   return (
     fromEnv ||
-    store.getOAuthClient([
-      path.join(app.getAppPath(), 'google-oauth.json'),
-      path.join(process.resourcesPath || '', 'google-oauth.json'),
-    ])
+    store.getOAuthClient() ||
+    projectConfig()?.google ||
+    store.getOAuthClient([path.join(app.getAppPath(), 'google-oauth.json'), path.join(process.resourcesPath || '', 'google-oauth.json')])
   );
+}
+
+/** First run on a new computer: take the class folder from zcord.config.json. */
+function adoptProjectFolder() {
+  const cfg = projectConfig();
+  if (cfg?.drive && !store.getSettings().folderId) store.setSettings(cfg.drive);
 }
 
 // ------------------------------------------------------------------ IPC --
@@ -660,7 +680,7 @@ function registerIpc() {
   ipcMain.handle('settings:get', () => ({ ...store.getSettings(), saveDir: store.getSettings().saveDir || defaultSaveDir() }));
   ipcMain.handle('settings:set', (_e, patch) => {
     const allowed = {};
-    for (const k of ['saveDir', 'autoUpload', 'keepLocalCopy', 'hidePanelsFromRecording', 'includeMic', 'micDeviceId', 'includeSystemAudio', 'quality']) {
+    for (const k of ['saveDir', 'autoUpload', 'keepLocalCopy', 'hidePanelsFromRecording', 'includeMic', 'micDeviceId', 'includeSystemAudio', 'quality', 'noiseMode']) {
       if (k in patch) allowed[k] = patch[k];
     }
     const next = store.setSettings(allowed);
@@ -691,6 +711,29 @@ function registerIpc() {
     if (before && before !== saved.clientId) drive.signOut();
     return driveStatus();
   });
+
+  ipcMain.handle('setup:saveToProject', async () => {
+    const creds = getCredentials();
+    const s = store.getSettings();
+    if (!creds) throw new Error('Save your Google key first (Settings → step 1).');
+    let file = projectConfigPath();
+    if (app.isPackaged) {
+      // An installed app can't write inside itself; let the teacher choose.
+      const r = await dialog.showSaveDialog(mainWin, { defaultPath: 'zcord.config.json', filters: [{ name: 'JSON', extensions: ['json'] }] });
+      if (r.canceled || !r.filePath) return null;
+      file = r.filePath;
+    }
+    writeProjectConfig(file, {
+      google: { clientId: creds.clientId, clientSecret: creds.clientSecret },
+      drive: s.folderId ? { folderId: s.folderId, folderName: s.folderName, folderLink: s.folderLink } : null,
+    });
+    return { file, inProject: !app.isPackaged, hasFolder: Boolean(s.folderId) };
+  });
+
+  // RNNoise model for "Strong" noise cancellation (the page can't fetch file://).
+  ipcMain.handle('nr:wasm', (_e, simd) =>
+    fs.promises.readFile(path.join(RENDERER, 'vendor', 'rnnoise', simd ? 'rnnoise_simd.wasm' : 'rnnoise.wasm'))
+  );
 
   ipcMain.handle('drive:status', () => driveStatus());
   ipcMain.handle('drive:signIn', async () => {
@@ -763,6 +806,7 @@ app.whenReady().then(() => {
       micDeviceId: 'default',
       includeSystemAudio: false,
       quality: 'high',
+      noiseMode: 'strong',
       folderId: '',
       folderName: '',
       folderLink: '',
@@ -782,6 +826,7 @@ app.whenReady().then(() => {
   // Anything stuck in "uploading" was interrupted by a crash/quit.
   for (const q of store.getQueue()) if (q.status === 'uploading') store.upsertQueueItem({ id: q.id, status: 'pending' });
 
+  adoptProjectFolder();
   registerIpc();
   installDisplayMediaHandler();
   createMainWindow();

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; media-src 'self' blob: mediastream:"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; media-src 'self' blob: mediastream:"
     />
     <title>zcord</title>
     <link rel="stylesheet" href="control.css" />
@@ -77,8 +77,21 @@
               <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0014 0M12 18v3" /></svg>
             </span>
             <select id="mic"></select>
+            <button id="testMic" class="btn-test" type="button" title="Record 5 seconds and play it back">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z" /></svg>
+              <span id="testMicLabel">Test</span>
+            </button>
           </div>
           <div id="meter" class="meter" aria-hidden="true"></div>
+          <p id="micTestStatus" class="field-msg" role="status" hidden></p>
+          <div class="nc-row">
+            <span class="nc-label" id="ncLabel">Noise cancellation</span>
+            <div class="seg small" id="noiseSeg" role="radiogroup" aria-labelledby="ncLabel">
+              <button type="button" role="radio" data-noise="off" title="Your microphone as it is">Off</button>
+              <button type="button" role="radio" data-noise="standard" title="Built-in noise suppression">Standard</button>
+              <button type="button" role="radio" data-noise="strong" title="AI noise removal: fans, typing, traffic, hum">Strong</button>
+            </div>
+          </div>
           <p id="micError" class="field-msg warn" hidden></p>
         </div>
 
@@ -196,6 +209,22 @@
           <p id="folderResult" class="muted"></p>
         </div>
 
+        <h3>Other computers</h3>
+        <div class="step col" id="portableStep">
+          <div class="step-body">
+            <b>Use this setup on another computer</b>
+            <p class="muted">Saves your Google key and class recordings folder into <code>zcord.config.json</code> in the zcord folder. Put that file on your other computer (by committing it to a <b>private</b> GitHub repo, or copying it) and zcord there is ready. Each computer still clicks <b>Sign in with Google</b> once — your sign-in is never saved in the file.</p>
+          </div>
+          <div class="row">
+            <button type="button" id="saveProjectConfig" class="btn-secondary">Save setup file</button>
+            <span id="projectConfigState" class="muted"></span>
+          </div>
+          <p id="projectConfigResult" class="field-msg" hidden></p>
+          <pre id="gitHint" class="code" hidden>git add zcord.config.json
+git commit -m "Add zcord setup"
+git push</pre>
+        </div>
+
         <h3>Recording</h3>
         <label class="check"><input id="autoUpload" type="checkbox" /><span>Upload to Drive automatically when I end the recording</span></label>
         <label class="check"><input id="keepLocalCopy" type="checkbox" /><span>Keep a copy on this computer after uploading</span></label>
@@ -220,6 +249,7 @@
 
     <div id="toast" class="toast" role="status" hidden></div>
 
+    <script src="mic.js"></script>
     <script src="control.js"></script>
   </body>
 </html>

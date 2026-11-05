@@ -173,41 +173,49 @@ async function loadMics() {
   if ([...sel.options].some((o) => o.value === settings.micDeviceId)) sel.value = settings.micDeviceId;
 }
 
-function micConstraints() {
-  const id = $('mic').value;
-  return {
-    deviceId: id && id !== 'default' ? { exact: id } : undefined,
-    echoCancellation: true,
-    noiseSuppression: true,
-    autoGainControl: true,
-  };
+function noiseMode() {
+  return settings.noiseMode || 'strong';
 }
 
+function renderNoise() {
+  for (const b of document.querySelectorAll('#noiseSeg button')) {
+    const on = b.dataset.noise === noiseMode();
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-checked', on ? 'true' : 'false');
+    b.disabled = !switchOn('includeMic');
+  }
+}
+
+let meterToken = 0;
+
+/** Opens the mic (with the chosen noise cancellation) and drives the level meter. */
 async function startMeter() {
   stopMeter();
+  const token = ++meterToken;
   $('micError').hidden = true;
-  if (!switchOn('includeMic')) return;
+  if (!switchOn('includeMic') || session) return;
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: micConstraints() });
-    const ctx = new AudioContext();
-    const analyser = ctx.createAnalyser();
-    analyser.fftSize = 512;
-    ctx.createMediaStreamSource(stream).connect(analyser);
-    const data = new Uint8Array(analyser.fftSize);
-    const m = { stream, ctx, raf: 0 };
+    const mic = await ZcordMic.open({ deviceId: $('mic').value, mode: noiseMode() });
+    if (token !== meterToken) {
+      mic.close(); // superseded by a newer start/stop
+      return;
+    }
+    const buf = new Float32Array(mic.analyser.fftSize);
+    const m = { mic, raf: 0 };
     const loop = () => {
-      analyser.getByteTimeDomainData(data);
-      let peak = 0;
-      for (const v of data) peak = Math.max(peak, Math.abs(v - 128));
-      setMeter(Math.min(1, (peak / 128) * 1.6));
+      setMeter(ZcordMic.level(mic.analyser, buf));
       m.raf = requestAnimationFrame(loop);
     };
     loop();
     meter = m;
-    $('micError').hidden = true;
+    if (mic.warning) {
+      $('micError').textContent = mic.warning;
+      $('micError').hidden = false;
+    }
     // Labels only appear after permission is granted.
     if ([...$('mic').options].every((o) => !o.textContent || o.textContent === 'Microphone')) loadMics();
   } catch (e) {
+    if (token !== meterToken) return;
     setMeter(0);
     $('micError').textContent = `Microphone unavailable: ${e.message}`;
     $('micError').hidden = false;
@@ -215,19 +223,119 @@ async function startMeter() {
 }
 
 function stopMeter() {
+  meterToken++;
+  if (micTest) endMicTest(null);
   if (!meter) return;
   cancelAnimationFrame(meter.raf);
-  meter.stream.getTracks().forEach((t) => t.stop());
-  meter.ctx.close();
+  meter.mic.close();
   meter = null;
   setMeter(0);
+}
+
+// ------------------------------------------------------------ mic test --
+// Records a few seconds through the same pipeline as the real recording
+// (including noise cancellation) and plays it back.
+
+const MIC_TEST_SECONDS = 5;
+let micTest = null; // { phase: 'recording'|'playing', recorder, timer, left, audio, url }
+
+function micTestStatus(text, kind = 'info') {
+  $('micTestStatus').textContent = text;
+  $('micTestStatus').className = `field-msg ${kind}`;
+  $('micTestStatus').hidden = !text;
+}
+
+function renderMicTest() {
+  const b = $('testMic');
+  b.classList.toggle('recording', micTest?.phase === 'recording');
+  b.classList.toggle('playing', micTest?.phase === 'playing');
+  $('testMicLabel').textContent = !micTest ? 'Test' : micTest.phase === 'recording' ? `Stop · ${micTest.left}` : 'Stop';
+  b.title = !micTest ? 'Record 5 seconds and play it back' : 'Stop the test';
+}
+
+async function startMicTest() {
+  if (!switchOn('includeMic')) {
+    micTestStatus('Turn the microphone on first.', 'warn');
+    return;
+  }
+  if (!meter) await startMeter();
+  if (!meter) return;
+  const chunks = [];
+  const recorder = new MediaRecorder(meter.mic.stream, { mimeType: 'audio/webm;codecs=opus' });
+  recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+  recorder.onstop = () => {
+    if (micTest && micTest.recorder === recorder) playMicTest(new Blob(chunks, { type: 'audio/webm' }));
+  };
+  micTest = { phase: 'recording', recorder, left: MIC_TEST_SECONDS };
+  micTest.timer = setInterval(() => {
+    if (!micTest || micTest.phase !== 'recording') return;
+    micTest.left -= 1;
+    if (micTest.left <= 0) recorder.stop();
+    renderMicTest();
+  }, 1000);
+  recorder.start();
+  micTestStatus('Recording… say a sentence like you would in class.');
+  renderMicTest();
+}
+
+function playMicTest(blob) {
+  clearInterval(micTest.timer);
+  const url = URL.createObjectURL(blob);
+  const audio = new Audio(url);
+  Object.assign(micTest, { phase: 'playing', audio, url });
+  audio.onended = () => endMicTest('done');
+  audio.play().catch((e) => endMicTest('error', e));
+  const label = { off: 'no', standard: 'Standard', strong: 'Strong' }[noiseMode()];
+  micTestStatus(`Playing back with ${label} noise cancellation — this is how you'll sound in the recording.`);
+  renderMicTest();
+}
+
+function endMicTest(reason, err) {
+  if (!micTest) return;
+  const t = micTest;
+  micTest = null;
+  clearInterval(t.timer);
+  if (t.recorder && t.recorder.state !== 'inactive') t.recorder.stop();
+  if (t.audio) t.audio.pause();
+  if (t.url) URL.revokeObjectURL(t.url);
+  renderMicTest();
+  if (reason === 'done') {
+    micTestStatus(
+      noiseMode() === 'strong'
+        ? 'Sounded clear? You\'re ready to record.'
+        : 'Hear background noise? Switch noise cancellation to Strong and test again.',
+      'ok'
+    );
+  } else if (reason === 'error') {
+    micTestStatus(`Couldn't play the test back: ${err?.message || err}`, 'warn');
+  } else {
+    micTestStatus('');
+  }
+}
+
+$('testMic').onclick = () => {
+  if (!micTest) startMicTest();
+  else if (micTest.phase === 'recording') micTest.recorder.stop(); // stop early, then play back
+  else endMicTest(null);
+};
+
+for (const b of document.querySelectorAll('#noiseSeg button')) {
+  b.onclick = async () => {
+    await saveSettings({ noiseMode: b.dataset.noise });
+    renderNoise();
+    micTestStatus('');
+    startMeter();
+  };
 }
 
 $('includeMic').onclick = async () => {
   const on = !switchOn('includeMic');
   setSwitch('includeMic', on);
   $('mic').disabled = !on;
+  $('testMic').disabled = !on;
   await saveSettings({ includeMic: on });
+  renderNoise();
+  micTestStatus('');
   startMeter();
 };
 $('mic').onchange = async () => {
@@ -303,6 +411,8 @@ function renderDrive() {
       ? 'Not signed in yet'
       : 'Finish step 1 first, then sign in here.';
   $('signIn').closest('.step').classList.toggle('done', d.signedIn);
+  $('saveProjectConfig').disabled = !d.configured;
+  $('projectConfigState').textContent = d.projectConfigFile ? 'This computer is using a setup file.' : '';
   $('saveFolder').disabled = !d.signedIn;
   $('folderInput').disabled = !d.signedIn;
   $('saveFolder').closest('.step').classList.toggle('done', Boolean(d.folderId));
@@ -393,6 +503,25 @@ $('signIn').onclick = async () => {
   await refreshDrive();
 };
 $('cancelSignIn').onclick = () => api.invoke('drive:cancelSignIn');
+
+$('saveProjectConfig').onclick = async () => {
+  const out = $('projectConfigResult');
+  try {
+    const r = await api.invoke('setup:saveToProject');
+    if (!r) return;
+    out.textContent = `Saved to ${r.file}.${r.hasFolder ? '' : ' It has no recordings folder yet: choose one in step 3, then save again.'}${
+      r.inProject ? ' To send it to GitHub, run these in the zcord folder (make the repo private first):' : ''
+    }`;
+    out.className = 'field-msg ok';
+    $('gitHint').hidden = !r.inProject;
+    await refreshDrive();
+  } catch (e) {
+    out.textContent = cleanErr(e);
+    out.className = 'field-msg err';
+    $('gitHint').hidden = true;
+  }
+  out.hidden = false;
+};
 $('signOut').onclick = async () => {
   driveState = await api.invoke('drive:signOut');
   renderDrive();
@@ -537,7 +666,7 @@ api.on('uploads:changed', renderUploads);
 
 // ----------------------------------------------------------- recorder --
 
-let session = null; // {recorder, streams[], audioCtx, chain}
+let session = null; // {recorder, streams[], mic, chain}
 
 function pickMimeType() {
   const candidates = [
@@ -564,7 +693,7 @@ async function startRecording() {
   const q = QUALITY[settings.quality] || QUALITY.high;
   const wantSystemAudio = info.systemAudioSupported && switchOn('includeSystemAudio');
   const streams = [];
-  let audioCtx = null;
+  let mic = null;
 
   try {
     await api.invoke('capture:select', { sourceId: selectedId, systemAudio: wantSystemAudio });
@@ -577,26 +706,24 @@ async function startRecording() {
     if (!video) throw new Error('No video from the selected screen.');
     video.contentHint = 'detail'; // keep text sharp
 
-    let mic = null;
     if (switchOn('includeMic')) {
       if (info.platform === 'darwin') await api.invoke('app:askMic');
       try {
-        mic = await navigator.mediaDevices.getUserMedia({ audio: micConstraints() });
-        streams.push(mic);
+        mic = await ZcordMic.open({ deviceId: $('mic').value, mode: noiseMode() });
+        if (mic.warning) toast(mic.warning, { error: true, ms: 6000 });
       } catch (e) {
         toast(`Recording without microphone: ${e.message}`, { error: true, ms: 6000 });
       }
     }
 
-    const audioSources = [display, mic].filter((s) => s && s.getAudioTracks().length);
+    // Microphone (noise-cancelled) and computer sound share one mix.
     let audioTracks = [];
-    if (audioSources.length === 1) {
-      audioTracks = audioSources[0].getAudioTracks();
-    } else if (audioSources.length > 1) {
-      audioCtx = new AudioContext();
-      const dest = audioCtx.createMediaStreamDestination();
-      for (const s of audioSources) audioCtx.createMediaStreamSource(s).connect(dest);
-      audioTracks = dest.stream.getAudioTracks();
+    const systemAudio = display.getAudioTracks().length ? display : null;
+    if (mic) {
+      if (systemAudio) mic.ctx.createMediaStreamSource(systemAudio).connect(mic.dest);
+      audioTracks = mic.stream.getAudioTracks();
+    } else if (systemAudio) {
+      audioTracks = systemAudio.getAudioTracks();
     }
 
     const stream = new MediaStream([video, ...audioTracks]);
@@ -608,7 +735,7 @@ async function startRecording() {
       videoBitsPerSecond: q.videoBitsPerSecond,
       audioBitsPerSecond: 128_000,
     });
-    session = { recorder, streams, audioCtx, chain: Promise.resolve(), stopping: false };
+    session = { recorder, streams, mic, chain: Promise.resolve(), stopping: false };
 
     recorder.ondataavailable = (e) => {
       if (!e.data || !e.data.size) return;
@@ -627,7 +754,7 @@ async function startRecording() {
     recorder.start(1000);
   } catch (e) {
     for (const s of streams) s.getTracks().forEach((t) => t.stop());
-    if (audioCtx) audioCtx.close();
+    if (mic) mic.close();
     session = null;
     await api.invoke('rec:finish', { discard: true }).catch(() => {});
     $('start').disabled = false;
@@ -658,7 +785,7 @@ async function finish() {
     console.error(e);
   }
   for (const st of s.streams) st.getTracks().forEach((t) => t.stop());
-  if (s.audioCtx) s.audioCtx.close();
+  if (s.mic) s.mic.close();
   session = null;
 
   const result = await api.invoke('rec:finish');
@@ -696,6 +823,8 @@ $('title').oninput = () => localStorage.setItem('lastTitle', $('title').value);
   $('title').value = localStorage.getItem('lastTitle') || '';
   setSwitch('includeMic', settings.includeMic !== false);
   $('mic').disabled = settings.includeMic === false;
+  $('testMic').disabled = settings.includeMic === false;
+  renderNoise();
   $('sysAudioRow').hidden = !info.systemAudioSupported;
   setSwitch('includeSystemAudio', Boolean(settings.includeSystemAudio));
 
@@ -709,9 +838,11 @@ $('title').oninput = () => localStorage.setItem('lastTitle', $('title').value);
     );
   }
 
-  await Promise.all([loadSources(), loadMics(), refreshDrive()]);
-  renderUploads(await api.invoke('uploads:list'));
+  // Mic first: the screen list can take a few seconds and shouldn't hold up the meter.
+  await loadMics();
   startMeter();
+  await Promise.all([loadSources(), refreshDrive()]);
+  renderUploads(await api.invoke('uploads:list'));
   window.addEventListener('focus', () => {
     if (!session) loadSources();
   });

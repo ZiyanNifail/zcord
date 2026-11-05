@@ -911,3 +911,80 @@ dialog::backdrop {
 .field-msg.ok {
   color: var(--green);
 }
+
+/* ------------------------------------------- mic test + noise cancellation */
+.btn-test {
+  flex: none;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: var(--raised);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.btn-test svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+  stroke: none;
+}
+.btn-test:hover:not(:disabled) {
+  border-color: #3a3f48;
+}
+.btn-test.recording {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+.btn-test.recording svg,
+.btn-test.playing svg {
+  display: none;
+}
+.btn-test.playing {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--blue-ink);
+}
+.nc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.nc-label {
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.seg.small button {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12.5px;
+}
+.field-msg.info {
+  color: var(--blue);
+}
+code,
+pre.code {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--line-2);
+}
+pre.code {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--ground);
+  border: 1px solid var(--line-2);
+  white-space: pre-wrap;
+  user-select: all;
+}
